@@ -1,0 +1,7 @@
+# Direct dependencies for main experiment; versions must be exported from verified training environment.
+torch
+numpy
+pandas
+networkx
+scikit-learn
+joblib
