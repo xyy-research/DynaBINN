@@ -1,0 +1,12 @@
+# Starting-point environment only; not a verified reproduction lockfile.
+name: dynabinn
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - numpy
+  - pandas
+  - networkx
+  - scikit-learn
+  - joblib
