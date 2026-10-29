@@ -1,0 +1,30 @@
+{
+  "BRCA": {
+    "snv": "TCGA/BRCA/BRCA_SNV_matrix.csv",
+    "cnv_amp": "TCGA/BRCA/BRCA_CNV_amp_matrix.csv",
+    "cnv_del": "TCGA/BRCA/BRCA_CNV_del_matrix.csv",
+    "mrna": "TCGA/BRCA/BRCA_mRNA_matrix.csv",
+    "labels": "TCGA/BRCA/BRCA_PAM50_labels.csv"
+  },
+  "LGG": {
+    "snv": "TCGA/LGG/LGG_SNV_matrix.csv",
+    "cnv_amp": "TCGA/LGG/LGG_CNV_amp_matrix.csv",
+    "cnv_del": "TCGA/LGG/LGG_CNV_del_matrix.csv",
+    "mrna": "TCGA/LGG/LGG_mRNA_matrix.csv",
+    "labels": "TCGA/LGG/LGG_Ternary_Labels.csv"
+  },
+  "KIPAN": {
+    "snv": "TCGA/KIPAN/KIPAN_SNV_matrix.csv",
+    "cnv_amp": "TCGA/KIPAN/KIPAN_CNV_amp_matrix.csv",
+    "cnv_del": "TCGA/KIPAN/KIPAN_CNV_del_matrix.csv",
+    "mrna": "TCGA/KIPAN/KIPAN_mRNA_matrix.csv",
+    "labels": "TCGA/KIPAN/KIPAN_Labels.csv"
+  },
+  "Prostate": {
+    "snv": "TCGA/qlx/P1000_SNV_matrix.csv",
+    "cnv_amp": "TCGA/qlx/P1000_CNV_amp_matrix.csv",
+    "cnv_del": "TCGA/qlx/P1000_CNV_del_matrix.csv",
+    "mrna": "TCGA/qlx/P1000_mRNA_matrix.csv",
+    "labels": "TCGA/qlx/P1000_Labels.csv"
+  }
+}
