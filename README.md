@@ -20,6 +20,13 @@ DynaBINN/
 │   └── utils.py             # Random seed utilities
 ├── configs/
 │   └── datasets.json       # Input file paths for the four cohorts
+├── preprocessing/
+│   ├── preprocess_kipan.py # KICH/KIRC/KIRP multi-omics preprocessing
+│   └── README.md           # Sources and preparation instructions
+├── data/
+│   ├── ReactomePathways.gmt
+│   ├── ReactomePathwaysRelation_new_download.txt
+│   └── protein-coding_gene_with_coordinate_minimal.txt
 ├── tests/
 │   └── test_model_smoke.py  # Model forward-pass test
 ├── environment.yml
@@ -40,7 +47,7 @@ For GPU training, install a PyTorch build compatible with your CUDA environment.
 
 ## Data preparation
 
-The experiments use three TCGA cohorts (BRCA, KIPAN, and LGG) obtained through UCSC Xena, the prostate cancer cohort from the P-NET study, and the Reactome pathway hierarchy.
+The experiments use three TCGA cohorts (BRCA, KIPAN, and LGG) obtained through [UCSC Xena](https://xenabrowser.net/datapages/), the prostate cancer cohort from the P-NET study, and the Reactome pathway hierarchy. The required reference files are included in the repository's `data/` directory. See [preprocessing/README.md](preprocessing/README.md) for data sources and the KIPAN preprocessing workflow.
 
 Place the preprocessed input matrices under an input root with the following layout:
 
@@ -59,7 +66,13 @@ INPUT_ROOT/
 
 The required cohort filenames are defined in `configs/datasets.json`. Each molecular matrix is a CSV file with sample identifiers as rows and genes as columns. The label file must contain a `label` column and corresponding sample identifiers. The four input channels are SNV, CNV amplification, CNV deletion, and mRNA.
 
-The training script reads the prepared matrices directly. Obtain the cohort datasets and Reactome annotations from their respective sources and prepare them using the preprocessing protocol described in the paper and supplementary material.
+The training script reads the prepared cohort matrices directly. For KIPAN, the included preprocessing script combines KICH, KIRC, and KIRP expression, absolute copy-number, and somatic-mutation tables from UCSC Xena:
+
+```bash
+python preprocessing/preprocess_kipan.py --raw_dir /path/to/kipan_xena_files --output_dir /path/to/INPUT_ROOT/TCGA/KIPAN
+```
+
+Use `--gene_map /path/to/gencode.v36.annotation.gtf.gene.probemap` when the mapping file is stored outside `--raw_dir`. The same five-file input interface is used for BRCA, LGG, and Prostate, with cohort-specific labels. For exact input filenames, see `configs/datasets.json`.
 
 ## Running experiments
 
@@ -87,3 +100,7 @@ python train.py --help
 python -m unittest discover -s tests -v
 python -m compileall -q train.py dynabinn tests
 ```
+
+## Reference data
+
+The Reactome pathway annotations in `data/` are derived from [Reactome](https://reactome.org/download-data/) and provided under [CC0](https://reactome.org/license). The protein-coding gene-coordinate list is included as the gene filtering reference used by the training code.
