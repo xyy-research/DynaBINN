@@ -1,4 +1,4 @@
-"""Reactome hierarchy and multi-omics construction. Input matrices are supplied by the user."""
+"""Reactome hierarchy construction and multi-omics data loading."""
 import os
 import copy
 from pathlib import Path
@@ -73,7 +73,7 @@ def prepare_dataset(input_root, dataset_name, cohort_files):
     print("\nLoading multi-omics data and labels...")
     for key in ('snv', 'cnv_amp', 'cnv_del', 'mrna', 'labels'):
         if key not in COHORT_FILES:
-            raise KeyError(f"Missing {key!r} for {args.dataset} in {DATASET_CONFIG}")
+            raise KeyError(f"Missing {key!r} for {dataset_name} in configs/datasets.json")
 
     snv_data = pd.read_csv(input_path(COHORT_FILES['snv']), index_col=0)
     amp_data = pd.read_csv(input_path(COHORT_FILES['cnv_amp']), index_col=0)
@@ -111,7 +111,7 @@ def prepare_dataset(input_root, dataset_name, cohort_files):
     final_genes = sorted(list(final_genes))
 
     # ==========================================
-    # 3. 构造先验矩阵与 3D 张量，自动判断任务类型
+    # 3. Construct prior matrices, input tensors, and task labels
     # ==========================================
     pathways_gene = np.zeros((len(pathway_union), len(final_genes))) 
     for p_idx, p_name in enumerate(pathway_union):
@@ -126,12 +126,12 @@ def prepare_dataset(input_root, dataset_name, cohort_files):
     del_np = np.nan_to_num(del_data.loc[common_samples, final_genes].values, nan=0.0)
     mrna_raw = np.nan_to_num(mrna_data.loc[common_samples, final_genes].values, nan=0.0)
 
-    # Apply the original per-sample log1p transform; fit mRNA MinMaxScaler inside each fold.
+    # Transform mRNA expression; MinMax scaling is fitted within each fold.
     mrna_np = np.log1p(mrna_raw)
 
     X_all = np.stack([snv_np, amp_np, del_np, mrna_np], axis=-1).astype(np.float32)
 
-    # 自动处理标签连续化，防止跨数据集标签格式跳跃
+    # Encode cohort labels as contiguous class indices
     label_encoder = LabelEncoder()
     Y_all = label_encoder.fit_transform(response['label'].values).astype(np.int64)
     NUM_CLASSES = len(np.unique(Y_all))
