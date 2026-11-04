@@ -72,7 +72,7 @@ The training script reads the prepared cohort matrices directly. For KIPAN, the 
 python preprocessing/preprocess_kipan.py --raw_dir /path/to/kipan_xena_files --output_dir /path/to/INPUT_ROOT/TCGA/KIPAN
 ```
 
-Use `--gene_map /path/to/gencode.v36.annotation.gtf.gene.probemap` when the mapping file is stored outside `--raw_dir`. The same five-file input interface is used for BRCA, LGG, and Prostate, with cohort-specific labels. BRCA is classified by PAM50 subtype, while the LGG experiment uses three *histological_type* categories from the UCSC Xena clinical matrix: **Oligodendroglioma (n=192), Astrocytoma (n=193), and Oligoastrocytoma (n=131)**. These labels denote histological categories, not measured IDH mutation or 1p/19q codeletion status. Prostate inputs are derived from the [P-NET dataset on Zenodo](https://zenodo.org/records/5163213). For source details and exact filenames, see [preprocessing/README.md](preprocessing/README.md) and `configs/datasets.json`.
+Use `--gene_map /path/to/gencode.v36.annotation.gtf.gene.probemap` when the mapping file is stored outside `--raw_dir`. The same five-file input interface is used for BRCA, LGG, and Prostate, with cohort-specific labels. BRCA is classified by PAM50 subtype, while the LGG experiment uses three *histological_type* categories from the UCSC Xena clinical matrix: **Oligodendroglioma (n=192), Astrocytoma (n=193), and Oligoastrocytoma (n=131)**. Prostate inputs are derived from the [P-NET dataset on Zenodo](https://zenodo.org/records/5163213). For source details and exact filenames, see [preprocessing/README.md](preprocessing/README.md) and `configs/datasets.json`.
 
 ## Running experiments
 
