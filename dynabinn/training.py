@@ -49,7 +49,7 @@ def run_experiment(bundle, save_dir, device):
             X_train_fold_raw, Y_train_fold, test_size=0.15, stratify=Y_train_fold, random_state=SEED + p
         )
 
-        # fold 内 mRNA MinMax 缩放（index=3 是 mRNA 通道）
+        # Fit the mRNA scaler on the optimization split (channel 3).
         scaler_mrna = MinMaxScaler(feature_range=(0, 1))
         X_train = X_train_raw.copy().astype(np.float32)
         X_val   = X_val_raw.copy().astype(np.float32)
@@ -58,15 +58,15 @@ def run_experiment(bundle, save_dir, device):
         X_val[:, :, 3]   = scaler_mrna.transform(X_val_raw[:, :, 3]).astype(np.float32)
         X_test[:, :, 3]  = scaler_mrna.transform(X_test_raw[:, :, 3]).astype(np.float32)
 
-        # fold 内 class weight（只基于 Y_train）
+        # Compute class weights from the optimization labels.
         fold_class_counts = np.bincount(Y_train, minlength=NUM_CLASSES).astype(np.float64)
-        fold_class_counts = np.maximum(fold_class_counts, 1.0)  # 防止某类缺失除零
+        fold_class_counts = np.maximum(fold_class_counts, 1.0)  # Avoid division by zero for absent classes.
         fold_weights = np.sqrt(len(Y_train) / (NUM_CLASSES * fold_class_counts))
         fold_alpha = torch.tensor(fold_weights, dtype=torch.float32).to(device)
         criterion = DynamicFocalLoss(alpha=fold_alpha, gamma=1.5)
 
         # ----------------------------------------------------------------
-        # Step A: 拓扑发现 (Inductive Topology Discovery)
+        # Step A: Topology discovery
         # ----------------------------------------------------------------
         print(f"--> [Step A] Topology Discovery (Epochs: {EPOCHS_DISCOVERY})...")
         seed_everything(SEED + p)
@@ -98,7 +98,7 @@ def run_experiment(bundle, save_dir, device):
                 loss.backward()
                 discovery_optimizer.step()
 
-        # 提取学习到的隐性边并构建 Fold 特异的增强掩码
+        # Select fold-specific added edges and construct augmented masks.
         discovery_model.eval()
         learned_weights = torch.sigmoid(discovery_model.pathway_layers[0].W_adj).detach().cpu().numpy()
         prior_mask = discovery_model.pathway_layers[0].prior_mask.detach().cpu().numpy()
@@ -120,7 +120,7 @@ def run_experiment(bundle, save_dir, device):
         torch.cuda.empty_cache()
         
         # ----------------------------------------------------------------
-        # Step B: Full Model 完整训练 (附带详细监控机制)
+        # Step B: Predictive training
         # ----------------------------------------------------------------
         print(f"--> [Step B] Training Full Model (Max Epochs: {EPOCHS_FULL})...")
         seed_everything(SEED + p)
@@ -180,7 +180,7 @@ def run_experiment(bundle, save_dir, device):
                 print(f" Early stopping triggered at epoch {epoch+1}. Best Val Loss: {best_val_loss:.4f}")
                 break
 
-        # ====== 盲测阶段 (Blind Test) ======
+        # Evaluate the held-out test partition.
         model.load_state_dict(best_model_state)
         model.to(device)
         model.eval()
@@ -191,25 +191,25 @@ def run_experiment(bundle, save_dir, device):
         fold_res_dict = evaluate_task(Y_test, test_preds_prob, NUM_CLASSES)
         fold_results.append(fold_res_dict)
 
-        # 打印 Fold 结果
+        # Report fold metrics.
         print("Fold Test Results:", ", ".join([f"{k} = {v:.3f}" for k, v in fold_res_dict.items()]))
 
-        # ====== 保存模型和关键数据 ======
+        # Save model and fold results.
         fold_save_dir = os.path.join(SAVE_DIR, f"fold_{p+1}")
         os.makedirs(fold_save_dir, exist_ok=True)
         
-        # 1. 保存模型权重
+        # Save model weights.
         torch.save({
             'model_state_dict': {k: v.cpu().clone() for k, v in model.state_dict().items()},
             'fold': p + 1,
             'best_val_loss': best_val_loss,
         }, os.path.join(fold_save_dir, 'best_model.pt'))
         
-        # 2. 保存先验mask和增强mask
+        # Save prior and augmented masks.
         np.save(os.path.join(fold_save_dir, 'prior_mask_layer0.npy'), original_pathway_masks[0])
         np.save(os.path.join(fold_save_dir, 'augmented_mask_layer0.npy'), fold_augmented_masks[0])
         
-        # 3. 保存测试集信息（方便后续分析定位样本）
+        # Save held-out sample indices, labels, and predictions.
         np.save(os.path.join(fold_save_dir, 'test_indices.npy'), test_index)
         np.save(os.path.join(fold_save_dir, 'test_labels.npy'), Y_test)
         np.save(os.path.join(fold_save_dir, 'test_predictions.npy'), test_preds_prob)
@@ -218,14 +218,14 @@ def run_experiment(bundle, save_dir, device):
         joblib.dump(scaler_mrna, os.path.join(fold_save_dir, 'scaler_mrna.pkl'))
         
         print(f"   Saved to {fold_save_dir}")
-        # ====== 保存结束 ======
+        # End fold outputs.
 
         del model, optimizer, train_loader, train_dataset
         gc.collect() 
         torch.cuda.empty_cache()
 
     # ====================================================================
-    # 7. 终极自适应指标打印汇总
+    # Summarize five-fold metrics.
     # ====================================================================
     print("\n" + "="*80)
     print(f"FINAL 5-FOLD CV RESULTS: DynaBINN ({'Binary' if IS_BINARY else 'Multi-Class'})")
@@ -239,11 +239,11 @@ def run_experiment(bundle, save_dir, device):
         print(f"{key:<14}: {mean_val:.3f} ± {std_val:.3f}")
     print("="*80)
 
-    # ====== 保存全局信息 ======
+    # Save cohort metadata.
     print(f"\nSaving global metadata to {SAVE_DIR}")
 
-    # 注意：X_all 现在保存的是 log1p 之后的原始 mRNA（未做 MinMax）
-    # 下游若要用 MinMax 后的数据，请用各 fold 的 scaler_mrna.pkl 去 transform
+    # X_all includes log1p-transformed mRNA before fold-specific MinMax scaling.
+    # Apply the saved fold-specific scaler for downstream inference.
     np.savez(os.path.join(SAVE_DIR, 'global_info.npz'), 
              final_genes=np.array(final_genes),
              pathway_union=np.array(pathway_union),
