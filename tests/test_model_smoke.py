@@ -1,4 +1,4 @@
-"""Synthetic forward test. This is not a numerical reproduction of the paper."""
+"""Test DynaBINN forward passes for discovery and prediction."""
 import unittest
 import numpy as np
 import torch
