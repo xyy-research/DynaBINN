@@ -5,7 +5,7 @@ DynaBINN uses four molecular channels: non-silent SNV, CNV amplification, CNV de
 ## Data sources
 
 - **BRCA, KIPAN, LGG:** [UCSC Xena data pages](https://xenabrowser.net/datapages/), including the GDC Hub datasets for gene expression, gene-level copy number, and somatic mutations.
-- **Prostate:** prostate cancer cohort published with [P-NET (Elmarakeby et al., Nature, 2021)](https://doi.org/10.1038/s41586-021-03922-6).
+- **Prostate:** [P-NET data archive on Zenodo (record 5163213)](https://zenodo.org/records/5163213), associated with the P-NET prostate cancer study.
 - **Reactome pathway hierarchy:** [Reactome downloads](https://reactome.org/download-data/). Its annotation data are distributed under [CC0](https://reactome.org/license).
 - **GENCODE gene annotation mapping:** `gencode.v36.annotation.gtf.gene.probemap`, obtainable through UCSC Xena where applicable.
 
@@ -56,6 +56,12 @@ protein-coding_gene_with_coordinate_minimal.txt
 
 The first two are Reactome annotations; the third is the project protein-coding gene-coordinate reference. The code uses this third file when present to intersect eligible genes with protein-coding gene symbols. Retaining the same reference snapshot and gene mapping is important for reproducing the study's exact gene counts.
 
-## Other cohorts
+## BRCA, LGG, and prostate labels
 
-The prepared BRCA, LGG, and prostate cohort matrices follow the same five-file interface defined in `configs/datasets.json`. Their phenotype labels and source-specific transformations follow the paper's cohort definitions; the KIPAN labeling script should not be reused to assign labels to the other cohorts.
+The BRCA and LGG molecular matrices follow the same general alignment, gene mapping, mutation binarization, and absolute-copy-number splitting workflow as KIPAN. The label-generation step differs by cohort:
+
+- **BRCA:** Use PAM50 subtype labels (LumA, LumB, Basal, HER2) from the Xena subtype table (`TCGASubtype.20170308.tsv.gz`, column `Subtype_Selected`), excluding the normal subtype.
+- **LGG:** Use `TCGA.LGG.sampleMap_LGG_clinicalMatrix`, column `histological_type`. The experiment uses **Oligodendroglioma (192 samples; encoded 0), Astrocytoma (193; encoded 1), and Oligoastrocytoma (131; encoded 2)**, aligned to the 516 cohort samples in `LGG_Ternary_Labels.csv`. The corresponding mapping is histological; these labels must **not** be interpreted as IDH-mutant/codeleted, IDH-mutant/non-codeleted, or IDH-wildtype classes without separate molecular evidence.
+- **Prostate:** Download the P-NET cohort from [Zenodo record 5163213](https://zenodo.org/records/5163213) and prepare Primary/mCRPC labels. The prostate matrices are stored under `TCGA/qlx/` using the `P1000_*.csv` filenames listed in the configuration; this path is a directory convention, not a claim that the cohort is part of TCGA.
+
+The model accepts five cohort-specific CSV files (SNV, CNV amplification, CNV deletion, mRNA, and labels); filenames are defined in `configs/datasets.json`. The published KIPAN script generates KICH/KIRC/KIRP labels and should not be used as the BRCA, LGG, or prostate label generator.
