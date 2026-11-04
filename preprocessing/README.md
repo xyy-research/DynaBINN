@@ -9,7 +9,7 @@ DynaBINN uses four molecular channels: non-silent SNV, CNV amplification, CNV de
 - **Reactome pathway hierarchy:** [Reactome downloads](https://reactome.org/download-data/). Its annotation data are distributed under [CC0](https://reactome.org/license).
 - **GENCODE gene annotation mapping:** `gencode.v36.annotation.gtf.gene.probemap`, obtainable through UCSC Xena where applicable.
 
-The exact input filenames are listed in `configs/datasets.json`. The pretrained model weights and cohort input matrices are not required to be checked into the repository.
+The input filenames for each cohort are listed in `configs/datasets.json`.
 
 ## KIPAN preprocessing
 
@@ -42,7 +42,7 @@ python preprocessing/preprocess_kipan.py \
 
 The output files are `KIPAN_SNV_matrix.csv`, `KIPAN_CNV_amp_matrix.csv`, `KIPAN_CNV_del_matrix.csv`, `KIPAN_mRNA_matrix.csv` and `KIPAN_Labels.csv`.
 
-The copy-number thresholds apply to **absolute ASCAT2 copy-number values** and should not be applied to log-ratio data. The resulting mRNA values are subsequently transformed with `log1p` in `dynabinn/data.py`, while fold-specific Min–Max scaling is performed in `dynabinn/training.py`.
+CNV amplification and deletion are defined using absolute ASCAT2 copy-number thresholds of **> 2.5** and **< 1.5**, respectively. mRNA values are transformed with `log1p` in `dynabinn/data.py` and scaled with a fold-specific Min–Max scaler in `dynabinn/training.py`.
 
 ## Reactome inputs
 
@@ -54,14 +54,14 @@ ReactomePathwaysRelation_new_download.txt
 protein-coding_gene_with_coordinate_minimal.txt
 ```
 
-The first two are Reactome annotations; the third is the project protein-coding gene-coordinate reference. The code uses this third file when present to intersect eligible genes with protein-coding gene symbols. Retaining the same reference snapshot and gene mapping is important for reproducing the study's exact gene counts.
+The first two files contain Reactome annotations. The third is the protein-coding gene-coordinate reference used for gene selection.
 
 ## BRCA, LGG, and prostate labels
 
 The BRCA and LGG molecular matrices follow the same general alignment, gene mapping, mutation binarization, and absolute-copy-number splitting workflow as KIPAN. The label-generation step differs by cohort:
 
 - **BRCA:** Use PAM50 subtype labels (LumA, LumB, Basal, HER2) from the Xena subtype table (`TCGASubtype.20170308.tsv.gz`, column `Subtype_Selected`), excluding the normal subtype.
-- **LGG:** Use `TCGA.LGG.sampleMap_LGG_clinicalMatrix`, column `histological_type`. The experiment uses **Oligodendroglioma (192 samples; encoded 0), Astrocytoma (193; encoded 1), and Oligoastrocytoma (131; encoded 2)**, aligned to the 516 cohort samples in `LGG_Ternary_Labels.csv`. The corresponding mapping is histological; these labels must **not** be interpreted as IDH-mutant/codeleted, IDH-mutant/non-codeleted, or IDH-wildtype classes without separate molecular evidence.
-- **Prostate:** Download the P-NET cohort from [Zenodo record 5163213](https://zenodo.org/records/5163213) and prepare Primary/mCRPC labels. The prostate matrices are stored under `TCGA/qlx/` using the `P1000_*.csv` filenames listed in the configuration; this path is a directory convention, not a claim that the cohort is part of TCGA.
+- **LGG:** Use `TCGA.LGG.sampleMap_LGG_clinicalMatrix`, column `histological_type`. The experiment uses **Oligodendroglioma (192 samples; encoded 0), Astrocytoma (193; encoded 1), and Oligoastrocytoma (131; encoded 2)**, aligned to the 516 cohort samples in `LGG_Ternary_Labels.csv`.
+- **Prostate:** Download the P-NET cohort from [Zenodo record 5163213](https://zenodo.org/records/5163213) and prepare Primary/mCRPC labels. The prepared prostate matrices use the `P1000_*.csv` filenames in `TCGA/qlx/`, as specified in `configs/datasets.json`.
 
-The model accepts five cohort-specific CSV files (SNV, CNV amplification, CNV deletion, mRNA, and labels); filenames are defined in `configs/datasets.json`. The published KIPAN script generates KICH/KIRC/KIRP labels and should not be used as the BRCA, LGG, or prostate label generator.
+Each cohort provides five CSV files: SNV, CNV amplification, CNV deletion, mRNA, and labels. Their filenames are defined in `configs/datasets.json`.
